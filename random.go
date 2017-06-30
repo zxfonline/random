@@ -12,6 +12,10 @@ import (
 	"time"
 )
 
+var (
+	_random = rand.New(rand.NewSource(time.Now().UnixNano()))
+)
+
 func RandInt32(min int32, max int32) int32 {
 	if max <= min {
 		max = min + 1
@@ -50,15 +54,14 @@ func RandInt(min int, max int) int {
 }
 
 func main1() {
-	random := rand.New(rand.NewSource(time.Now().UnixNano()))
-	fmt.Println(GetRandomNumber("1", random))
-	fmt.Println(GetRandomNumber("1~10", random))
-	fmt.Println(GetRandomNumber("1~10,2,2~5", random))
-	fmt.Println(GetRandomNumber("1,2,4", random))
-	fmt.Println(GetRandomNumber("2~10:40", random))
-	fmt.Println(GetRandomNumber("1:40", random))
-	fmt.Println(GetRandomNumber("1:20,1~4:30,4:500", random))
-	fmt.Println(GetRandomNumbers("2~10:40#10:20,10~45:30,40~80:500", random))
+	fmt.Println(GetRandomNumber("1", nil))
+	fmt.Println(GetRandomNumber("1~10", nil))
+	fmt.Println(GetRandomNumber("1~10,2,2~5", nil))
+	fmt.Println(GetRandomNumber("1,2,4", nil))
+	fmt.Println(GetRandomNumber("2~10:40", nil))
+	fmt.Println(GetRandomNumber("1:40", nil))
+	fmt.Println(GetRandomNumber("1:20,1~4:30,4:500", nil))
+	fmt.Println(GetRandomNumbers("2~10:40#10:20,10~45:30,40~80:500", nil))
 }
 
 /**
@@ -88,16 +91,16 @@ func GetRandomValues(numbers []int, n int) []int {
  * 加权随机数 数值抽取器
  *
  * @param args 以“#”劈分数组然后再在数组元素中每一位获取一个随机数
- * @param random
+ * @param radom
  * @see #GetRandomNumber(String, Random)
  * @return
  */
-func GetRandomNumbers(args string, random *rand.Rand) []int {
+func GetRandomNumbers(args string, radom *rand.Rand) []int {
 	strs := strings.Split(args, "#")
 	size := len(strs)
 	ints := make([]int, 0, size)
 	for i := 0; i < size; i++ {
-		ints = append(ints, GetRandomNumber(strs[i], random))
+		ints = append(ints, GetRandomNumber(strs[i], radom))
 	}
 	return ints
 }
@@ -111,10 +114,13 @@ func GetRandomNumbers(args string, random *rand.Rand) []int {
  * 支持概率后缀 代表该值被抽取出来的几率 值越高被抽出的概率越大 并不限定后缀值的范围 如：1:20,1~4:30,4:500
  *
  * @param args
- * @param random
+ * @param radom
  * @return
  */
-func GetRandomNumber(args string, random *rand.Rand) int {
+func GetRandomNumber(args string, radom *rand.Rand) int {
+	if radom == nil {
+		radom = _random
+	}
 	var err error
 	var value int
 	//	if strings.Index(args, ",") > 0 {
@@ -138,11 +144,11 @@ func GetRandomNumber(args string, random *rand.Rand) int {
 				weights[i] = value
 				weightSum += value
 			}
-			if numbers[i], err = average(valuesStr, random); err != nil {
+			if numbers[i], err = average(valuesStr, radom); err != nil {
 				panic(fmt.Errorf("invalid args:%v,err:%v", args, err))
 			}
 		}
-		ranNum := random.Intn(weightSum)
+		ranNum := radom.Intn(weightSum)
 		for i := 0; i < size; i++ {
 			ranNum -= weights[i]
 			if ranNum < 0 {
@@ -156,15 +162,15 @@ func GetRandomNumber(args string, random *rand.Rand) int {
 		}
 	} else { // 1~10,44~89,2~5
 		for i := 0; i < size; i++ {
-			if numbers[i], err = average(values[i], random); err != nil {
+			if numbers[i], err = average(values[i], radom); err != nil {
 				panic(fmt.Errorf("invalid args:%v,err:%v", args, err))
 			}
 		}
-		return numbers[random.Intn(size)]
+		return numbers[radom.Intn(size)]
 	}
 }
 
-func average(args string, random *rand.Rand) (int, error) { // 1~10
+func average(args string, radom *rand.Rand) (int, error) { // 1~10
 	if strings.Index(args, "~") > 0 {
 		tmp := strings.Split(args, "~")
 		if v1, err1 := strconv.Atoi(tmp[0]); err1 != nil {
@@ -172,7 +178,7 @@ func average(args string, random *rand.Rand) (int, error) { // 1~10
 		} else if v2, err2 := strconv.Atoi(tmp[1]); err2 != nil {
 			return 0, err2
 		} else {
-			return v1 + random.Intn(v2+1-v1), nil
+			return v1 + radom.Intn(v2+1-v1), nil
 		}
 	} else {
 		return strconv.Atoi(args)
