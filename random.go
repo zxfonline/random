@@ -261,12 +261,14 @@ func GetRandomItems(items []RandItem, n int, radom *rand.Rand) []RandItem {
 
 }
 
+//RandInterface 随机数选取器接口
 type RandInterface interface {
 	Len() int
 	Weight(i int) int
 	SubValue(indexs []int) interface{}
 }
 
+//GetRandomWeight 随机数选取
 func GetRandomWeight(data RandInterface, n int, radom *rand.Rand) interface{} {
 	if radom == nil {
 		radom = _random
